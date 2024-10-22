@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TelemedycynaApp</string>
+
+    <string name="devName">ESP-32BLE</string>
+<!--Services and characteristics-->
+
+    <string name="mainService">0d25bfd0-bc11-46fd-ac84-50c1a30ce2f9</string>
+    <string name="mainCharacteristic">753b24de-5f4a-4399-8818-b1f00981fdd0</string>
+
+    <string name="baseDescriptor">00002902-0000-1000-8000-00805f9b34fb</string>
+
+</resources>
