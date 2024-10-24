@@ -12,6 +12,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.UUID;
 
 @SuppressLint("MissingPermission")
@@ -40,7 +42,7 @@ public class GattManager {
         if (bluetoothGatt != null) {
             bluetoothGatt.close();
         }
-        bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_AUTO);
+        bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -48,6 +50,9 @@ public class GattManager {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.v("GattManager: ", " status nie success " + status);
+            }
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -91,14 +96,16 @@ public class GattManager {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
             byte[] receivedBytes = characteristic.getValue();
-            int[] bytesConverted = convertToUnsigned(receivedBytes);
-            double humidity=parseData(bytesConverted);
-            sendBroadcast(humidity);
+            float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            Log.v("GattManager, reading: ", String.valueOf(reading));
+            //int[] bytesConverted = convertToUnsigned(receivedBytes);
+            //double humidity=parseData(bytesConverted);
+            sendBroadcast(reading);
         }
     };
 
     private double parseData(int[] data) {
-        return 0.0 ;//do wyciagniecia wilgotnosci
+        return 0.0;//do wyciagniecia wilgotnosci
     }
 
     private void sendBroadcast(double data) {
