@@ -21,6 +21,7 @@ public class BLEScanner {
     private final BluetoothLeScanner bluetoothLeScanner;
     private final Handler handler = new Handler();
     private final String searchedDev;
+    private boolean deviceFound=false;
     private IScanResultListener listener;
 
     public BLEScanner(Context context, String searchedDev) {
@@ -41,13 +42,13 @@ public class BLEScanner {
             bluetoothLeScanner.stopScan(bleScanCallBack);
             return;
         }
-        int SCAN_PERIOD = 10000;
-        handler.postDelayed(new Runnable() {
-            @SuppressLint("MissingPermission")
-            @Override
-            public void run() {
-                scanning = false;
-                bluetoothLeScanner.stopScan(bleScanCallBack);
+        deviceFound = false;
+        int SCAN_PERIOD = 5000;
+        handler.postDelayed(() -> {
+            scanning = false;
+            bluetoothLeScanner.stopScan(bleScanCallBack);
+            if(!deviceFound){
+                listener.onScanNotFound();
             }
         }, SCAN_PERIOD);
         scanning = true;
@@ -77,6 +78,7 @@ public class BLEScanner {
             BluetoothDevice device = result.getDevice();
             if (device.getName() != null) {
                 stopScan();
+                deviceFound=true;
                 listener.onScanSuccess(device);
             }
         }

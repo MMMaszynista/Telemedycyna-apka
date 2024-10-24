@@ -6,11 +6,9 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,7 +22,8 @@ public class GattManager {
     private final Context context;
     private BluetoothGatt bluetoothGatt;
     private final BluetoothDevice bluetoothDevice;
-    private IConnect listener;
+    private IConnect scanListener;
+    private boolean isConnected = false;
 
     public GattManager(Context context, BluetoothDevice device) {
         this.context = context;
@@ -34,8 +33,8 @@ public class GattManager {
         this.descriptorUUID = UUID.fromString(context.getString(R.string.baseDescriptor));
     }
 
-    public void addListener(IConnect listener) {
-        this.listener = listener;
+    public void setOnConnectListener(IConnect listener) {
+        this.scanListener = listener;
     }
 
     public void connectToDevice() {
@@ -45,36 +44,29 @@ public class GattManager {
         bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
     }
 
+    public void disconnect() {
+        bluetoothGatt.disconnect();
+    }
+
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                Log.v("GattManager: ", " status nie success " + status);
-            }
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.v("AAA", "Disconecting from GATT");
                 gatt.close();
-            } else if (newState == BluetoothProfile.STATE_CONNECTING) {
-                Log.v("CONNECTING", "CONNECTING");
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTING) {
-                Log.v("DISCONNECTING", "DISCONNECTING");
             }
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                for (BluetoothGattService serv : gatt.getServices()) {
-                    Log.i("TAG", "Service: " + serv.getUuid());
-                    for (BluetoothGattCharacteristic characteristic : serv.getCharacteristics()) {
-                        Log.i("TAG", "Characteristic: " + characteristic.getUuid());
-                    }
-                    listener.onConnect();
+                if (!isConnected) {
+                    scanListener.onConnect();
                 }
+                isConnected = true;
                 BluetoothGattCharacteristic characteristic = gatt.getService(serviceUUID)
                         .getCharacteristic(characteristicUUID);
                 gatt.setCharacteristicNotification(characteristic, true);
@@ -97,28 +89,13 @@ public class GattManager {
             super.onCharacteristicChanged(gatt, characteristic);
             byte[] receivedBytes = characteristic.getValue();
             float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            Log.v("GattManager, reading: ", String.valueOf(reading));
-            //int[] bytesConverted = convertToUnsigned(receivedBytes);
-            //double humidity=parseData(bytesConverted);
             sendBroadcast(reading);
         }
     };
 
-    private double parseData(int[] data) {
-        return 0.0;//do wyciagniecia wilgotnosci
-    }
-
-    private void sendBroadcast(double data) {
+    private void sendBroadcast(float data) {
         Intent intent = new Intent("DATA_RECEIVED");
         intent.putExtra("data", data);
         context.sendBroadcast(intent);
-    }
-
-    private int[] convertToUnsigned(byte[] bytes) {
-        int[] unsignedResult = new int[bytes.length];
-        for (int i = 0; i < bytes.length; i = i + 1) {
-            unsignedResult[i] = bytes[i] & 0xFF;
-        }
-        return unsignedResult;
     }
 }
