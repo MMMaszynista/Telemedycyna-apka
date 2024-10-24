@@ -17,13 +17,11 @@
         android:textColor="@color/white"
         android:textSize="30sp"/>
 
-    <com.google.android.material.button.MaterialButton
+    <Button
         android:id="@+id/connectButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cornerRadius="10dp"
         android:text="Połącz się"
-        android:textColor="@color/black"
-        android:backgroundTint="#3f98cb"/>
+        android:textColor="@color/black"/>
 
 </LinearLayout>

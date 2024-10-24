@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -8,9 +7,9 @@
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID        "4182dfcc-13bf-40e1-8067-a46b38030ecf"
-#define HUMIDITY_CHARACTERISTIC_UUID "3a75655b-3da0-474d-b387-eccb8f5fad0a"
-#define TEMP_CHARACTERISTIC_UUID "9861f68f-b20b-45c3-a1be-c6627d245391"
+#define SERVICE_UUID                  "4182dfcc-13bf-40e1-8067-a46b38030ecf"
+#define HUMIDITY_CHARACTERISTIC_UUID  "3a75655b-3da0-474d-b387-eccb8f5fad0a"
+#define TEMP_CHARACTERISTIC_UUID      "9861f68f-b20b-45c3-a1be-c6627d245391"
 
 #define BLE_SERVER_NAME "24hWilgotnosc_ESP32"
 #define DHTPIN 4
@@ -24,9 +23,11 @@ DHT dht(DHTPIN, DHTTYPE);
   class MyServerCallbacks: public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) {
     deviceConnected = true;
+    Serial.println("Telefon polaczone");
   };
   void onDisconnect(BLEServer* pServer) {
     deviceConnected = false;
+    Serial.println("Telefon rozlaczony");
     BLEDevice::startAdvertising();
   }
 };
@@ -34,9 +35,9 @@ DHT dht(DHTPIN, DHTTYPE);
 
 uint64_t lastMills = 0;
 uint16_t readHumDelay = 2000;
-BLECharacteristic humCharacteristics(HUMIDITY_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic *humCharacteristics= new BLECharacteristic(HUMIDITY_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ);
 BLECharacteristic tempCharacteristics(TEMP_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor humDescriptor(BLEUUID((uint16_t)0x2902));
+BLEDescriptor *humDescriptor= new BLEDescriptor(BLEUUID((uint16_t)0x2902));
 BLEDescriptor tempDescriptor(BLEUUID((uint16_t)0x2903));
 
 void setup() {
@@ -50,17 +51,17 @@ void setup() {
   pServer->setCallbacks(new MyServerCallbacks());
 
   BLEService *pService = pServer->createService(SERVICE_UUID);
-  pService->addCharacteristic(&humCharacteristics);
-  humCharacteristics.setValue("Wilgotnosc");
+  pService->addCharacteristic(humCharacteristics);
+  humDescriptor->setValue("Wilgotnosc");
+  humCharacteristics->addDescriptor(humDescriptor);
   
   pService->start();
 
   // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
-  pAdvertising->setMinPreferred(0x12);
+  // pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+  // pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
   Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
@@ -88,8 +89,9 @@ void loop() {
       //float hif = dht.computeHeatIndex(f, h);
       // Compute heat index in Celsius (isFahreheit = false)
       //float hic = dht.computeHeatIndex(t, h, false);
-      humCharacteristics.setValue(std::to_string(h));
-      humCharacteristics.notify();
+      humCharacteristics->setValue(h);
+      humCharacteristics->notify();
+      
 
       Serial.print(F("Humidity: "));
       Serial.print(h);
@@ -105,5 +107,9 @@ void loop() {
       // Serial.println(F("°F"));
       lastMills=millis();
     }
+  }
+  else{
+    delay(200);
+    BLEDevice::startAdvertising();
   }
 }

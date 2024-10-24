@@ -25,10 +25,10 @@ class MainActivity : ComponentActivity(),IConnect {
                 override fun onScanSuccess(device: BluetoothDevice) {
                     val gattManager = GattManager(this@MainActivity, device)
                     gattManager.addListener(this@MainActivity)
-                    Handler(Looper.getMainLooper()).postDelayed({
+                    Thread(Runnable {
+                        // Kod do uruchomienia w osobnym wątku
                         gattManager.connectToDevice()
-                    }, 2000)
-                    gattManager.connectToDevice()
+                    }).start()
                 }
             })
             bleScanner.startScan()
@@ -36,6 +36,6 @@ class MainActivity : ComponentActivity(),IConnect {
     }
 
     override fun onConnect() {
-        startActivity(Intent(this,ChartActivity::class.java))
+        startActivity(Intent(this, ChartActivity::class.java))
     }
 }
