@@ -2,4 +2,5 @@
 <resources>
 
     <style name="Theme.TelemedycynaApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="main" parent="Theme.AppCompat.Light.NoActionBar"/>
 </resources>

@@ -1,4 +1,4 @@
-package com.example.telemedycynaapp
+package com.example.telemedycynaapp.Interfaces
 
 import android.bluetooth.BluetoothDevice
 

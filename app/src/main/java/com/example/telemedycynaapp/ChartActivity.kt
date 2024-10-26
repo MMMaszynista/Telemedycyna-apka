@@ -65,18 +65,18 @@ class ChartActivity : ComponentActivity() {
         dataSet.valueTextColor = Color.WHITE
         dataSet.valueTextSize = 15f
         dataSet.color = Color.YELLOW
-        dataSet.lineWidth=3f;
-        lineChart.axisLeft.textColor=Color.WHITE;
-        lineChart.axisLeft.axisLineColor=Color.WHITE;
-        lineChart.axisLeft.textSize=16f;
-        lineChart.axisRight.textColor=Color.WHITE;
-        lineChart.axisRight.axisLineColor=Color.WHITE;
-        lineChart.axisRight.textSize=16f;
-        lineChart.xAxis.textColor=Color.WHITE;
-        lineChart.xAxis.axisLineColor=Color.WHITE;
-        lineChart.xAxis.textSize=16f;
-        lineChart.legend.textColor=Color.WHITE;
-        lineChart.legend.textSize=18f;
+        dataSet.lineWidth=3f
+        lineChart.axisLeft.textColor=Color.WHITE
+        lineChart.axisLeft.axisLineColor=Color.WHITE
+        lineChart.axisLeft.textSize=16f
+        lineChart.axisRight.textColor=Color.WHITE
+        lineChart.axisRight.axisLineColor=Color.WHITE
+        lineChart.axisRight.textSize=16f
+        lineChart.xAxis.textColor=Color.WHITE
+        lineChart.xAxis.axisLineColor=Color.WHITE
+        lineChart.xAxis.textSize=16f
+        lineChart.legend.textColor=Color.WHITE
+        lineChart.legend.textSize=18f
     }
 
     private fun refreshChart() {
