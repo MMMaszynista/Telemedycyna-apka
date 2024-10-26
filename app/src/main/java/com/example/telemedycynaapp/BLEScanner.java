@@ -12,6 +12,8 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 
+import com.example.telemedycynaapp.Interfaces.IScanResultListener;
+
 import java.util.ArrayList;
 import java.util.List;
 
