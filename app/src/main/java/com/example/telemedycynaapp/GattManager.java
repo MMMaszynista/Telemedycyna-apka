@@ -9,12 +9,17 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 import com.example.telemedycynaapp.Interfaces.IConnect;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @SuppressLint("MissingPermission")
 public class GattManager {
@@ -26,6 +31,8 @@ public class GattManager {
     private final BluetoothDevice bluetoothDevice;
     private IConnect scanListener;
     private boolean isConnected = false;
+    float readingGlobal=0;
+    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GattManager(Context context, BluetoothDevice device) {
         this.context = context;
@@ -33,6 +40,11 @@ public class GattManager {
         this.serviceUUID = UUID.fromString(context.getString(R.string.mainService));
         this.characteristicUUID = UUID.fromString(context.getString(R.string.mainCharacteristic));
         this.descriptorUUID = UUID.fromString(context.getString(R.string.baseDescriptor));
+        scheduler.scheduleWithFixedDelay(() -> {
+            if(readingGlobal!=0) {
+                sendBroadcast(readingGlobal);
+            }
+        }, 0, 2, TimeUnit.SECONDS);
     }
 
     public void setOnConnectListener(IConnect listener) {
@@ -48,6 +60,9 @@ public class GattManager {
 
     public void disconnect() {
         bluetoothGatt.disconnect();
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -91,8 +106,10 @@ public class GattManager {
             super.onCharacteristicChanged(gatt, characteristic);
             byte[] receivedBytes = characteristic.getValue();
             float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            sendBroadcast(reading);
+            readingGlobal = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            //sendBroadcast(reading);
         }
+
     };
 
     private void sendBroadcast(float data) {
