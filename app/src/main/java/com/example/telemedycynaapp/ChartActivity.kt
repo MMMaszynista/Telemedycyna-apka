@@ -10,9 +10,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import com.example.telemedycynaapp.databinding.ActivityChartBinding
 import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 
 
 class ChartActivity : ComponentActivity() {
@@ -40,6 +43,24 @@ class ChartActivity : ComponentActivity() {
         lineChart.setTouchEnabled(true)
         lineChart.description.isEnabled = false
         lineChart.setPinchZoom(true)
+        val marker=Marker(this)
+        marker.chartView=lineChart
+        lineChart.marker=marker
+
+        val description = Description().apply {
+            text = "Czas (sekundy)"
+            textSize = 16f
+            textColor = Color.WHITE
+            //setPosition(2f, - 2f)  // pozycja w prawym dolnym rogu
+        }
+
+        /*lineChart.description.text = "Czas (sekundy)"
+        lineChart.description.textSize = 16f
+        lineChart.description.textColor = Color.WHITE*/
+        /*lineChart.description.position.x=500f
+        lineChart.description.position.y=50f*/
+
+        lineChart.description=description
         val filter = IntentFilter("DATA_RECEIVED")
         registerReceiver(dataReceiver, filter)
     }
@@ -52,7 +73,7 @@ class ChartActivity : ComponentActivity() {
 
     private fun processData(data: Float) {
         entries.add(Entry(dataCount.toFloat(), data))
-        dataCount++
+        dataCount+=2
         dataSet = LineDataSet(entries, "Wilgotność")
         prepDataSet()
         refreshChart()
@@ -75,6 +96,7 @@ class ChartActivity : ComponentActivity() {
         lineChart.xAxis.textColor=Color.WHITE
         lineChart.xAxis.axisLineColor=Color.WHITE
         lineChart.xAxis.textSize=16f
+        lineChart.xAxis.position=XAxis.XAxisPosition.BOTTOM;
         lineChart.legend.textColor=Color.WHITE
         lineChart.legend.textSize=18f
     }

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/mainBackground"
@@ -11,7 +14,10 @@
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/humidityChart"
         android:layout_width="match_parent"
-        android:layout_height="375dp" />
+        android:layout_height="375dp"
+        tools:layout_editor_absoluteX="133dp"
+        tools:layout_editor_absoluteY="117dp">
 
+    </com.github.mikephil.charting.charts.LineChart>
 
 </LinearLayout>
