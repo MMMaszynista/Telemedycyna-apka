@@ -74,6 +74,9 @@ public class GattManager {
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 gatt.close();
+                if (scheduler != null && !scheduler.isShutdown()) {
+                    scheduler.shutdown();
+                }
             }
         }
 
@@ -105,7 +108,7 @@ public class GattManager {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
             byte[] receivedBytes = characteristic.getValue();
-            float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            //float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             readingGlobal = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             //sendBroadcast(reading);
         }
