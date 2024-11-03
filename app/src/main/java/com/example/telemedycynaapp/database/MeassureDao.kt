@@ -19,5 +19,17 @@ interface MeassureDao {
     suspend fun delete(note: Meassure)
 
     @Query("SELECT * FROM meassures")
-    fun getAllNotes(): LiveData<List<Meassure>>
+    fun getAllMeassures(): List<Meassure>
+
+    @Query("SELECT COUNT(*) FROM meassures")
+    fun getRecordsCount(): Int
+
+    @Query("SELECT * FROM meassures WHERE id=:id")
+    fun getMeassureById(id: Int): Meassure?
+
+    @Query("DELETE FROM meassures")
+    fun deleteAll()
+
+    @Query("DELETE FROM sqlite_sequence WHERE name = 'meassures'")
+    fun resetId()
 }
