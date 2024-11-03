@@ -6,8 +6,12 @@ pluginManagement {
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
             }
+            maven {
+                url = uri("https://plugins.gradle.org/m2/")
+            }
         }
         mavenCentral()
+        google()
         gradlePluginPortal()
     }
 }
