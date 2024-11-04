@@ -9,6 +9,8 @@
     <uses-permission
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <!--Do nowszych wersji-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -44,7 +46,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ChartActivity" />
+        <activity
+            android:name=".ChartActivity"
+            android:theme="@style/main"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

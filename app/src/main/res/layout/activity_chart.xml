@@ -10,12 +10,6 @@
     android:orientation="vertical"
     android:padding="10dp">
 
-    <Button
-        android:id="@+id/saveFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:text="Pobierz bazę"/>
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/humidityChart"
@@ -23,7 +17,15 @@
         android:layout_height="375dp"
         tools:layout_editor_absoluteX="133dp"
         tools:layout_editor_absoluteY="117dp">
-
     </com.github.mikephil.charting.charts.LineChart>
+
+    <Button
+        android:id="@+id/saveFileButton"
+        android:layout_width="145dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/custom_button"
+        android:text="@string/pobierz_baz"
+        android:textColor="@color/buttonText" />
 
 </LinearLayout>
