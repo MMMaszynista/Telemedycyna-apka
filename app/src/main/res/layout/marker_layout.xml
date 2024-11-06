@@ -10,7 +10,7 @@
         android:id="@+id/coordinateTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="X: 0, Y: 0"
+        android:text="@string/x_0_y_0"
         android:textColor="#FFFFFF"
         android:textSize="14sp" />
     </LinearLayout>

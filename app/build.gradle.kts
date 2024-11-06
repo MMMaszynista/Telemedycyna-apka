@@ -74,8 +74,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation (libs.mpandroidchart)
+    implementation(libs.androidx.room.ktx)
+    kapt(libs.androidx.room.compiler)
     implementation ("com.google.android.material:material:1.11.0")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
-
 }

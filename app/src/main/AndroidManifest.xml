@@ -3,14 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!--API<=30-->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
+        
     <uses-permission
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+        
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="33" />
 
     <!--Do nowszych wersji-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -48,7 +52,7 @@
 
         <activity
             android:name=".ChartActivity"
-            android:theme="@style/main"/>
+            android:theme="@style/main" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BLEScanner {
+public class BLEScanner { //klasa do wyszukiwania urządzenia bluetooth mierzącego wilgotnosc
     private boolean scanning;
     private final BluetoothLeScanner bluetoothLeScanner;
     private final Handler handler = new Handler();
@@ -26,7 +26,7 @@ public class BLEScanner {
     private boolean deviceFound=false;
     private IScanResultListener listener;
 
-    public BLEScanner(Context context, String searchedDev) {
+    public BLEScanner(Context context, String searchedDev) { //konstruktor inicjalizujacy obiekty klasy
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
         bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
@@ -38,7 +38,7 @@ public class BLEScanner {
     }
 
     @SuppressLint("MissingPermission")
-    public void startScan() {
+    public void startScan() { //rozpoczecie skanowania w poszukiwaniu urządzeń bluetooth
         if (scanning) {
             scanning = false;
             bluetoothLeScanner.stopScan(bleScanCallBack);
@@ -66,16 +66,16 @@ public class BLEScanner {
     }
 
     @SuppressLint("MissingPermission")
-    private void stopScan() {
+    private void stopScan() { //zatrzymanie skanowania w poszukiwaniu urzadzenia mierzacego wilgotnosc
         if (!scanning) return;
         scanning = false;
         bluetoothLeScanner.stopScan(bleScanCallBack);
     }
 
     @SuppressLint("MissingPermission")
-    private final ScanCallback bleScanCallBack = new ScanCallback() {
+    private final ScanCallback bleScanCallBack = new ScanCallback() { //funkcja  wywołania zwrotnego uruchamiana jesli urządzenie zostało odnalezione
         @Override
-        public void onScanResult(int callbackType, ScanResult result) {
+        public void onScanResult(int callbackType, ScanResult result) { //akcja po wykryciu urządzenia
             super.onScanResult(callbackType, result);
             BluetoothDevice device = result.getDevice();
             if (device.getName() != null) {
@@ -86,7 +86,7 @@ public class BLEScanner {
         }
 
         @Override
-        public void onScanFailed(int errorCode) {
+        public void onScanFailed(int errorCode) { //funkcja wywoływana jeśli skan nie może zostać włączony
             super.onScanFailed(errorCode);
             stopScan();
         }
