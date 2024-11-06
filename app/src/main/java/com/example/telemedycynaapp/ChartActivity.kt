@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Environment.getExternalStoragePublicDirectory
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,29 +34,28 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.LinkedList
+import java.util.Locale
+import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 
 
-class ChartActivity : ComponentActivity() {
+class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wyniki pomiarów wilgotnosci
     private lateinit var binding: ActivityChartBinding
     private lateinit var lineChart: LineChart
     private lateinit var dataSet: LineDataSet
-    private val dbQueue=ConcurrentLinkedQueue<DbChartMeassure>();
+    private val dbQueue=ConcurrentLinkedQueue<DbChartMeassure>()
     private val requestedPermissions = Manifest.permission.WRITE_EXTERNAL_STORAGE
     private lateinit var db: AppDatabase
     private var entries = mutableListOf<Entry>()
     private var timeSeconds = 0
     private var timeId = 1
     private var updateData = false
-    private var maxMeassures = 5
+    private var maxMeassures = 50
 
-    private val queue = object : LinkedHashMap<Int, Pair<Float, Float>>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Pair<Float, Float>>): Boolean {
-            return size > maxMeassures
-        }
-    }
+    private val queue: Queue<Pair<Int, Float>> = LinkedList()
 
-    private val dataReceiver = object : BroadcastReceiver() {
+    private val dataReceiver = object : BroadcastReceiver() { //obiekt globalny przesylajacy z klasy gattManager zmierzona wartosc wilgotnosci
         override fun onReceive(context: Context?, intent: Intent?) {
             val data = intent?.getFloatExtra("data", 0.0F)
             data?.let {
@@ -66,20 +64,117 @@ class ChartActivity : ComponentActivity() {
         }
     }
 
-    private fun resetDb() {
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    override fun onCreate(savedInstanceState: Bundle?) { //inicjalizacja pól klasy
+        super.onCreate(savedInstanceState)
+        db = AppDatabase.getDatabase(this)
+        resetDb() //usuniecie zawartosci tabeli w bazie danych
+        binding = ActivityChartBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        prepLineChart() //konfiguracja wygladu wykresu liniowego
+
+        binding.saveFileButton.setOnClickListener { //przypisanie funkcji wywolywanej po nacisnieciu przycisku
+            saveDataToFile()
+        }
+
+        val filter = IntentFilter("DATA_RECEIVED")
+        registerReceiver(dataReceiver, filter)
+
+        saveToDb(dbQueue) //funckja wywolywana w osobnym watku ktora zapisuje pomiary do bazy danych
+    }
+
+    override fun onDestroy() { //funckja wywoływana gdy aktywność (ekran) jest zamykany
+        super.onDestroy()
+        unregisterReceiver(dataReceiver)
+        setResult(RESULT_CANCELED)
+    }
+
+    private fun saveToDb(dataQueue : ConcurrentLinkedQueue<DbChartMeassure>) { //funkcja zapisująca pomiary do bazy danych
+        CoroutineScope(Dispatchers.IO).launch {
+            while(true) {
+                if (dbQueue.isNotEmpty()) {
+                    var entry = dataQueue.poll() // Pobiera i usuwa pierwszy element
+                    while (entry != null) { //jesli w buforze sa jakies wartosci to zapisuj kazdy do bazy danych
+                        if (entry.update) { //zaktualizuj zapisana juz wartosc wilgotnosci w tabeli
+                            if(db.meassureDao().getMeassureById(entry.meas.id)!=null) {
+                                db.meassureDao().update(
+                                    Meassure(
+                                        id = entry.meas.id,
+                                        humidity = entry.meas.humidity,
+                                        date = entry.meas.date
+                                    )
+                                ) // Wywołaj metodę update
+                            }
+                        } else { //dodaaj nowa wartosc wilgotnosci do tabeli
+                            db.meassureDao().insert(
+                                Meassure(
+                                    date = entry.meas.date,
+                                    humidity = entry.meas.humidity
+                                )
+                            )
+                        }
+                        entry = dataQueue.poll()
+                    }
+                }else {
+                    delay(500) // Dodanie opóźnienia, aby nie obciążać CPU
+                }
+            }
+        }
+
+    }
+
+    private fun processData(data: Float) { //odbiera dane, dodaje do kolejki i wyświetla na wykresie
+
+        if (data > 55f) {
+            lineChart.axisLeft.axisMaximum = 100f
+            lineChart.axisLeft.labelCount = 10
+        }
+
+        if (timeId > maxMeassures) {
+            timeId = 1
+        }
+
+        if(updateData){
+            queue.poll()
+            queue.offer(Pair(timeSeconds, data))
+        } else{
+            queue.offer(Pair(timeSeconds, data))
+        }
+
+        dbQueue.add(DbChartMeassure(Meassure(id = timeId, date=TimeValueFormatter().getFormattedValue(timeSeconds.toFloat()), humidity = data), updateData))
+
+        entries=queueToEntries(queue)
+        dataSet = LineDataSet(entries, "Wilgotność")
+
+        if (!updateData && timeId == maxMeassures) {
+            updateData = true
+        }
+
+        timeSeconds += 2
+        timeId++
+        prepDataSet()
+        refreshChart()
+    }
+
+    private fun queueToEntries(queue: Queue<Pair<Int, Float>>): MutableList<Entry> {
+        val entries = mutableListOf<Entry>()
+        for (pair in queue) {
+            entries.add(Entry(pair.first.toFloat(), pair.second))
+        }
+        return entries
+    }
+
+
+    private fun resetDb() { //funkcja usuwa wszystkie dane z tabeli w bazie danych
         CoroutineScope(Dispatchers.IO).launch {
             db.meassureDao().deleteAll()
             db.meassureDao().resetId()
         }
     }
+    
+    private fun prepLineChart(){ //funkcja ustawia parametry wykresu - kolory, rozmiary punktów, wartości maksymalne / minimalne na osi X, Y
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        db = AppDatabase.getDatabase(this)
-        resetDb()
-        binding = ActivityChartBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         lineChart = binding.humidityChart
         lineChart.setDrawGridBackground(false)
         lineChart.setTouchEnabled(true)
@@ -101,112 +196,23 @@ class ChartActivity : ComponentActivity() {
         lineChart.legend.textSize = 18f
         lineChart.setNoDataText("")
         dataSet=LineDataSet(entries, "Puste dane")
-        val lineData = LineData(dataSet);
+        val lineData = LineData(dataSet)
         lineChart.data = lineData
-
-        binding.saveFileButton.setOnClickListener {
-           saveDataToFile()
-        }
 
         val marker = Marker(this)
         marker.chartView = lineChart
 
         lineChart.marker = marker
-        lineChart.axisLeft.axisMaximum = 60f;
+        lineChart.axisLeft.axisMaximum = 60f
 
         val description = Description().apply {
             text = "Czas"
             textSize = 16f
             textColor = Color.WHITE
-            //setPosition(2f, - 2f)  // pozycja w prawym dolnym rogu
         }
-
         lineChart.description = description
-        val filter = IntentFilter("DATA_RECEIVED")
-        registerReceiver(dataReceiver, filter)
-
-        saveToDb(dbQueue)
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(dataReceiver)
-        setResult(RESULT_CANCELED)
-    }
-
-    private fun saveToDb(dataQueue : ConcurrentLinkedQueue<DbChartMeassure>) {
-        CoroutineScope(Dispatchers.IO).launch {
-            while(true) {
-                if (dbQueue.isNotEmpty()) {
-                    var entry = dataQueue.poll() // Pobiera i usuwa pierwszy element
-                    while (entry != null) {
-                        if (entry.update) {
-                            if(db.meassureDao().getMeassureById(entry.meas.id)!=null) {
-                                db.meassureDao().update(
-                                    Meassure(
-                                        id = entry.meas.id,
-                                        humidity = entry.meas.humidity,
-                                        date = entry.meas.date
-                                    )
-                                ) // Wywołaj metodę update
-                            }
-                        } else {
-                            db.meassureDao().insert(
-                                Meassure(
-                                    date = entry.meas.date,
-                                    humidity = entry.meas.humidity
-                                )
-                            )
-                        }
-                        entry = dataQueue.poll()
-                    }
-                }else {
-                    delay(500) // Dodanie opóźnienia, aby nie obciążać CPU
-                }
-            }
-        }
-
-    }
-
-
-    private fun processData(data: Float) {
-        Log.v("timeID: ", timeId.toString())
-
-        if (data > 55f) {
-            lineChart.axisLeft.axisMaximum = 100f
-            lineChart.axisLeft.labelCount = 10
-        }
-
-        if (timeId > maxMeassures) {
-            timeId = 1
-        }
-
-        queue.put(timeId, Pair(timeSeconds.toFloat(), data))
-        dbQueue.add(DbChartMeassure(Meassure(id = timeId, date=TimeValueFormatter().getFormattedValue(timeSeconds.toFloat()), humidity = data), updateData))
-
-        entries = queueToEntries(queue)
-        dataSet = LineDataSet(entries, "Wilgotność")
-
-        if (!updateData && timeId == maxMeassures) {
-            updateData = true
-        }
-
-        timeSeconds += 2
-        timeId++
-        prepDataSet()
-        refreshChart()
-    }
-
-    private fun queueToEntries(queue: LinkedHashMap<Int, Pair<Float, Float>>): MutableList<Entry> {
-        val entries = mutableListOf<Entry>()
-        for (pair in queue) {
-            entries.add(Entry(pair.value.first, pair.value.second))
-        }
-        return entries
-    }
-
-    private fun prepDataSet() {
-        //dataSet.setDrawCircles(false)
+    private fun prepDataSet() { //przygotuj zestaw danych do wyswietlenia na wykresie
         dataSet.setDrawCircleHole(false)
         dataSet.setDrawValues(false)
         dataSet.valueTextColor = Color.WHITE
@@ -216,14 +222,13 @@ class ChartActivity : ComponentActivity() {
         dataSet.lineWidth = 3f
     }
 
-    private fun refreshChart() {
+    private fun refreshChart() { //funkcja odświeżająca wykres
         val lineData = LineData(dataSet)
         lineChart.data = lineData
         lineChart.invalidate()
     }
 
-
-    private fun saveDataToFile() {
+    private fun saveDataToFile() { //funckja zapisująca zebrane dane do formatu CSV
         // Pobierz dane z bazy danych
         if(!checkRequestPermission()){
             requestPermission.launch(requestedPermissions)
@@ -238,7 +243,7 @@ class ChartActivity : ComponentActivity() {
                 fileContent.append("ID,Date,Humidity\n") // Nagłówki
 
                 for (measure in measures) {
-                    fileContent.append("${measure.id},${measure.date},${measure.humidity}\n")
+                    fileContent.append("${measure.id}, ${measure.date}, ${measure.humidity}\n")
                 }
 
                 if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){ //dla android >= 10
@@ -269,10 +274,12 @@ class ChartActivity : ComponentActivity() {
             }
         }
     }
-    private fun checkRequestPermission(): Boolean {
+    
+    private fun checkRequestPermission(): Boolean { //funkcja sprawdzająca czy użytkownik przyznał odpowiednie uprawnienia
         return (ContextCompat.checkSelfPermission(this, requestedPermissions) == PackageManager.PERMISSION_GRANTED)
     }
-    private val requestPermission =
+    
+    private val requestPermission = //funkcja obsługi przyznania / nieprzyznania uprawnień przez użytkownika
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { permission ->
             var permanentlyDenied = false
 
@@ -299,7 +306,7 @@ class ChartActivity : ComponentActivity() {
 }
 data class DbChartMeassure(val meas: Meassure, val update : Boolean)
 
-class TimeValueFormatter : ValueFormatter() {
+class TimeValueFormatter : ValueFormatter() { //klasa odpowiedzialna za wyświetlanie wartości na osi X w odpowiednim formacie godzina:minuta:sekunda
     override fun getFormattedValue(value: Float): String {
         val totalSeconds = value.toInt()
         val hours = totalSeconds / 3600

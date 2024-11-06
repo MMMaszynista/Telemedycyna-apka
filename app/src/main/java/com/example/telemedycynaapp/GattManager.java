@@ -9,20 +9,16 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
-
 import com.example.telemedycynaapp.Interfaces.IConnect;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @SuppressLint("MissingPermission")
-public class GattManager {
+public class GattManager { //klaaa odpowiedzialna za połączenie z urządzeniem
     private final UUID serviceUUID;
     private final UUID characteristicUUID;
     private final UUID descriptorUUID;
@@ -31,10 +27,10 @@ public class GattManager {
     private final BluetoothDevice bluetoothDevice;
     private IConnect scanListener;
     private boolean isConnected = false;
-    float readingGlobal=0;
-    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private float readingGlobal=0;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public GattManager(Context context, BluetoothDevice device) {
+    public GattManager(Context context, BluetoothDevice device) { //inicjalizacja pó
         this.context = context;
         this.bluetoothDevice = device;
         this.serviceUUID = UUID.fromString(context.getString(R.string.mainService));
@@ -51,24 +47,24 @@ public class GattManager {
         this.scanListener = listener;
     }
 
-    public void connectToDevice() {
+    public void connectToDevice() { //funkcja do łączenia się z urządzeniem
         if (bluetoothGatt != null) {
             bluetoothGatt.close();
         }
         bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
     }
 
-    public void disconnect() {
+    public void disconnect() { //funkcja do rozłączenia się z urządzeniem
         bluetoothGatt.disconnect();
         if (scheduler != null && !scheduler.isShutdown()) {
             scheduler.shutdown();
         }
     }
 
-    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() { //wywołanie zwrotne w przypadku pomyślnego połączenia
 
         @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) { //funkcja wywoływana podczas zmianu stanu połączenia z urządzeniem
             super.onConnectionStateChange(gatt, status, newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
@@ -81,7 +77,7 @@ public class GattManager {
         }
 
         @Override
-        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) { //funckja wywoływana gdy zostaną odnalezione charakterystyki urządzenia
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (!isConnected) {
                     scanListener.onConnect();
@@ -100,22 +96,14 @@ public class GattManager {
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            super.onCharacteristicRead(gatt, characteristic, status);
-        }
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) { //funcja wywoływana gdy charakterystyka (dane) urządzenia ulegają zmianie
             super.onCharacteristicChanged(gatt, characteristic);
             byte[] receivedBytes = characteristic.getValue();
-            //float reading = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             readingGlobal = ByteBuffer.wrap(receivedBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            //sendBroadcast(reading);
         }
-
     };
 
-    private void sendBroadcast(float data) {
+    private void sendBroadcast(float data) { //funkcja rozsylajaca nowo zmierzona wartosc wilgotnosci do innych aktywnosci
         Intent intent = new Intent("DATA_RECEIVED");
         intent.putExtra("data", data);
         context.sendBroadcast(intent);

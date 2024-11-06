@@ -5,10 +5,10 @@ import android.content.DialogInterface
 import android.content.Intent
 import androidx.appcompat.app.AlertDialog
 
-class DialogManager {
+class DialogManager { //klasa pomocnicza, odpowiedzialna za wyświetlanie okien dialogowych
     companion object {
 
-        fun showDialogPermDenied(context: Context, action: () -> Unit) {
+        fun showDialogPermDenied(context: Context, action: () -> Unit) { //okno dialogowe z prośbą o przyznanie uprawnień, wyświetlane w przypadku odmówienia uprawnień po raz pierwszy
             AlertDialog.Builder(context)
                 .setTitle("Brak uprawnień")
                 .setMessage("Odmówiono pewnych uprawnień przyznaj je w aplikacji")
@@ -24,7 +24,7 @@ class DialogManager {
                 .show()
         }
 
-        fun showSettingsDialog(context: Context) {
+        fun showSettingsDialog(context: Context) { //okno dialogowe z prośbą o przyznanie uprawnień w ustawieniach aplikacji
             AlertDialog.Builder(context)
                 .setTitle("Wymagane uprawnienia")
                 .setMessage("Niektóre uprawnienia zostały trwale odrzucone. Proszę przejść do ustawień i je przyznać.")
@@ -42,7 +42,7 @@ class DialogManager {
                 .show()
         }
 
-        fun showBtLocationDialog(context: Context) {
+        fun showBtLocationDialog(context: Context) { //okno dialogowe z prośbą o włączenie odpowiednich modułów
             AlertDialog.Builder(context)
                 .setTitle("Uruchom lokalizację i Bluetooth")
                 .setMessage("Aby skanować urządzenia lokalizacja i bluetooth muszą być włączone. Uruchom je i spróbuj ponownie.")

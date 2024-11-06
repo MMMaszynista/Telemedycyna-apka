@@ -15,5 +15,6 @@
     <string name="firstServiceCharacteristic">0000ffb2-0000-1000-8000-00805f9b34fb</string>
     <string name="secondServiceCharacteristic">0000fee1-0000-1000-8000-00805f9b34fb</string>
     <string name="pobierz_baz">Pobierz bazę</string>
+    <string name="x_0_y_0">X: 0, Y: 0</string>
 
 </resources>

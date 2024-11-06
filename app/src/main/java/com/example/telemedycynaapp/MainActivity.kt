@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity(), IConnect {
     private lateinit var binding: ActivityMainBinding
     private lateinit var chartLauncher: ActivityResultLauncher<Intent>
     private lateinit var gattManager: GattManager
-    private val requestedPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+    private val requestedPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) //tablica z nazwami uprawnien wymaganymi do dzialania takich funkcji jak bluetooth
         arrayOf(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
@@ -62,12 +62,12 @@ class MainActivity : AppCompatActivity(), IConnect {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setChartLauncher()
-        binding.connectButton.setOnClickListener {
+        binding.connectButton.setOnClickListener { //przypisanie do przycisku funkcji gwarantujacej mozliwosc polaczenia sie z urzadzeniem mierzącym wilgotnosc
             blePart()
         }
     }
 
-    private fun blePart() {
+    private fun blePart() { //funkcja wywolywana po wcisnieciu przycisku "Połącz się" odpowiada za procedure wyszukiwania i laczenia sie z urzadzeniem mierzacym wilgotnosc
         if (!ServiceStateUtils.isLocationEnabled(this) || !ServiceStateUtils.isBluetoothEnabled(this)) {
             DialogManager.showBtLocationDialog(this)
             return
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity(), IConnect {
         val bleScanner = BLEScanner(this, getString(R.string.devName))
 
         bleScanner.setOnDeviceFoundListener(object : IScanResultListener {
-            override fun onScanSuccess(device: BluetoothDevice) {
+            override fun onScanSuccess(device: BluetoothDevice) { //funkcja wywoływana przy znalezienu urządzenia podczas skanowania
                 gattManager = GattManager(this@MainActivity, device)
                 gattManager.setOnConnectListener(this@MainActivity)
                 Handler(Looper.getMainLooper()).postDelayed({
@@ -87,8 +87,8 @@ class MainActivity : AppCompatActivity(), IConnect {
                 }, 200)
             }
 
-            override fun onScanNotFound() {
-                AlertDialog.Builder(this@MainActivity).apply {
+            override fun onScanNotFound() { //funkcja wywoływana gdy urządzenie nie zostało znalezione podczas skanowania
+                AlertDialog.Builder(this@MainActivity).apply { //wyświetl okno dialogowe o braku urządzenia
                     setTitle("Wystąpił błąd")
                     setMessage("Nie znaleziono urządzenia. Spróbuj ponownie.")
                     setPositiveButton("OK") { dialog, _ ->
@@ -102,11 +102,11 @@ class MainActivity : AppCompatActivity(), IConnect {
         bleScanner.startScan()
     }
 
-    override fun onConnect() {
+    override fun onConnect() { //funkcja wywoływana przy pomyślnym połączeniu z urządzeniem
         chartLauncher.launch(Intent(this, ChartActivity::class.java))
     }
 
-    private fun setChartLauncher() {
+    private fun setChartLauncher() { //funkcja ustawiajaca dla obiektu chartLauncher funkcje ktora przy powrocie zwraca stan aktywnosci 
         chartLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == RESULT_CANCELED) {
@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity(), IConnect {
             }
     }
 
-    private fun checkPermissions(): Boolean {
+    private fun checkPermissions(): Boolean { //funkcja sprawdzająca czy zostały przyznane uprawnienia
         return requestedPermissions.all { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
         }
