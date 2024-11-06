@@ -18,7 +18,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.telemedycynaapp.database.AppDatabase
 import com.example.telemedycynaapp.database.Meassure
@@ -32,26 +31,28 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.security.AccessController.getContext
+import java.util.concurrent.ConcurrentLinkedQueue
 
 
 class ChartActivity : ComponentActivity() {
     private lateinit var binding: ActivityChartBinding
     private lateinit var lineChart: LineChart
     private lateinit var dataSet: LineDataSet
+    private val dbQueue=ConcurrentLinkedQueue<DbChartMeassure>();
     private val requestedPermissions = Manifest.permission.WRITE_EXTERNAL_STORAGE
     private lateinit var db: AppDatabase
     private var entries = mutableListOf<Entry>()
     private var timeSeconds = 0
     private var timeId = 1
     private var updateData = false
-    private var maxMeassures = 70
+    private var maxMeassures = 5
 
-    private val queue = object : LinkedHashMap<Float, Float>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Float, Float>): Boolean {
+    private val queue = object : LinkedHashMap<Int, Pair<Float, Float>>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Pair<Float, Float>>): Boolean {
             return size > maxMeassures
         }
     }
@@ -84,7 +85,6 @@ class ChartActivity : ComponentActivity() {
         lineChart.setTouchEnabled(true)
         lineChart.description.isEnabled = false
         lineChart.setPinchZoom(true)
-        lineChart.axisLeft.axisMaximum = 60f
         lineChart.axisLeft.textColor = Color.WHITE
         lineChart.axisLeft.axisLineColor = Color.WHITE
         lineChart.axisLeft.textSize = 16f
@@ -99,6 +99,10 @@ class ChartActivity : ComponentActivity() {
         lineChart.axisRight.isEnabled = false
         lineChart.legend.textColor = Color.WHITE
         lineChart.legend.textSize = 18f
+        lineChart.setNoDataText("")
+        dataSet=LineDataSet(entries, "Puste dane")
+        val lineData = LineData(dataSet);
+        lineChart.data = lineData
 
         binding.saveFileButton.setOnClickListener {
            saveDataToFile()
@@ -106,7 +110,9 @@ class ChartActivity : ComponentActivity() {
 
         val marker = Marker(this)
         marker.chartView = lineChart
+
         lineChart.marker = marker
+        lineChart.axisLeft.axisMaximum = 60f;
 
         val description = Description().apply {
             text = "Czas"
@@ -118,6 +124,8 @@ class ChartActivity : ComponentActivity() {
         lineChart.description = description
         val filter = IntentFilter("DATA_RECEIVED")
         registerReceiver(dataReceiver, filter)
+
+        saveToDb(dbQueue)
     }
 
     override fun onDestroy() {
@@ -126,59 +134,73 @@ class ChartActivity : ComponentActivity() {
         setResult(RESULT_CANCELED)
     }
 
-    private fun saveToDb(data: Float) {
+    private fun saveToDb(dataQueue : ConcurrentLinkedQueue<DbChartMeassure>) {
         CoroutineScope(Dispatchers.IO).launch {
-            val timeValueFormatter = TimeValueFormatter()
-            if (timeId > maxMeassures) {
-                timeId = 1
-            }
-            if (updateData) {
-                val meassureToUpdate = db.meassureDao().getMeassureById(timeId)
-                // Sprawdź, czy pomiar istnieje, a następnie zaktualizuj
-                meassureToUpdate?.let {
-                    val updatedMeassure = it.copy(
-                        humidity = data,
-                        date = timeValueFormatter.getFormattedValue(timeSeconds.toFloat())
-                    ) // Utwórz nową instancję z nową wilgotnością
-                    db.meassureDao().update(updatedMeassure) // Wywołaj metodę update
+            while(true) {
+                if (dbQueue.isNotEmpty()) {
+                    var entry = dataQueue.poll() // Pobiera i usuwa pierwszy element
+                    while (entry != null) {
+                        if (entry.update) {
+                            if(db.meassureDao().getMeassureById(entry.meas.id)!=null) {
+                                db.meassureDao().update(
+                                    Meassure(
+                                        id = entry.meas.id,
+                                        humidity = entry.meas.humidity,
+                                        date = entry.meas.date
+                                    )
+                                ) // Wywołaj metodę update
+                            }
+                        } else {
+                            db.meassureDao().insert(
+                                Meassure(
+                                    date = entry.meas.date,
+                                    humidity = entry.meas.humidity
+                                )
+                            )
+                        }
+                        entry = dataQueue.poll()
+                    }
+                }else {
+                    delay(500) // Dodanie opóźnienia, aby nie obciążać CPU
                 }
-            } else {
-                db.meassureDao().insert(
-                    Meassure(
-                        date = timeValueFormatter.getFormattedValue(timeSeconds.toFloat()),
-                        humidity = data
-                    )
-                )
-                if (timeId == maxMeassures) {
-                    updateData = true
-                }
             }
-            timeId++
         }
 
     }
 
 
     private fun processData(data: Float) {
-        saveToDb(data)
         Log.v("timeID: ", timeId.toString())
+
         if (data > 55f) {
             lineChart.axisLeft.axisMaximum = 100f
             lineChart.axisLeft.labelCount = 10
         }
-        queue.put(timeSeconds.toFloat(), data)
-        //entries.add(Entry(timeSeconds.toFloat(), data))
+
+        if (timeId > maxMeassures) {
+            timeId = 1
+        }
+
+        queue.put(timeId, Pair(timeSeconds.toFloat(), data))
+        dbQueue.add(DbChartMeassure(Meassure(id = timeId, date=TimeValueFormatter().getFormattedValue(timeSeconds.toFloat()), humidity = data), updateData))
+
         entries = queueToEntries(queue)
-        timeSeconds += 2
         dataSet = LineDataSet(entries, "Wilgotność")
+
+        if (!updateData && timeId == maxMeassures) {
+            updateData = true
+        }
+
+        timeSeconds += 2
+        timeId++
         prepDataSet()
         refreshChart()
     }
 
-    private fun queueToEntries(queue: LinkedHashMap<Float, Float>): MutableList<Entry> {
+    private fun queueToEntries(queue: LinkedHashMap<Int, Pair<Float, Float>>): MutableList<Entry> {
         val entries = mutableListOf<Entry>()
         for (pair in queue) {
-            entries.add(Entry(pair.key, pair.value))
+            entries.add(Entry(pair.value.first, pair.value.second))
         }
         return entries
     }
@@ -275,8 +297,7 @@ class ChartActivity : ComponentActivity() {
             }
         }
 }
-
-
+data class DbChartMeassure(val meas: Meassure, val update : Boolean)
 
 class TimeValueFormatter : ValueFormatter() {
     override fun getFormattedValue(value: Float): String {
