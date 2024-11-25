@@ -51,7 +51,7 @@ class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wynik
     private var timeSeconds = 0
     private var timeId = 1
     private var updateData = false
-    private var maxMeassures = 50
+    private var maxMeassures = 20
 
     private val queue: Queue<Pair<Int, Float>> = LinkedList()
 
@@ -150,6 +150,8 @@ class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wynik
 
         if (!updateData && timeId == maxMeassures) {
             updateData = true
+            lineChart.xAxis.resetAxisMaximum()
+            lineChart.xAxis.resetAxisMinimum()
         }
 
         timeSeconds += 2
