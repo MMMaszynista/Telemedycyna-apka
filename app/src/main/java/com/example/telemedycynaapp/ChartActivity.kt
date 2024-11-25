@@ -67,6 +67,7 @@ class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wynik
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate(savedInstanceState: Bundle?) { //inicjalizacja pól klasy
         super.onCreate(savedInstanceState)
+
         db = AppDatabase.getDatabase(this)
         resetDb() //usuniecie zawartosci tabeli w bazie danych
         binding = ActivityChartBinding.inflate(layoutInflater)
@@ -191,6 +192,10 @@ class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wynik
         lineChart.xAxis.axisLineColor = Color.WHITE
         lineChart.xAxis.textSize = 16f
         lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+        lineChart.xAxis.axisMinimum= 0F
+        lineChart.xAxis.axisMaximum= (maxMeassures*2).toFloat()
+        lineChart.isAutoScaleMinMaxEnabled=false
+
         lineChart.axisRight.isEnabled = false
         lineChart.legend.textColor = Color.WHITE
         lineChart.legend.textSize = 18f
@@ -211,6 +216,7 @@ class ChartActivity : ComponentActivity() { //klasa wykresu prezentujacego wynik
             textColor = Color.WHITE
         }
         lineChart.description = description
+        refreshChart()
     }
     private fun prepDataSet() { //przygotuj zestaw danych do wyswietlenia na wykresie
         dataSet.setDrawCircleHole(false)

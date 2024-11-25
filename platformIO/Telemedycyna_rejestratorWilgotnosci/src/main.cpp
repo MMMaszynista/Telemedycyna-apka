@@ -73,7 +73,7 @@ void loop() {
   if (deviceConnected) {
     // Odczyt danych co ustalony czas
     if (millis() > lastMills + readHumDelay) {
-      float h = dht.readHumidity();       // Odczyt wilgotności
+      float h = (dht.readHumidity()*1.51269584)-(15.69421934);       // Odczyt wilgotności
       float t = dht.readTemperature();    // Odczyt temperatury
 
       // Sprawdzenie poprawności odczytanych wartości
